@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1E2D40">
+<title>Mi Presupuesto</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --dark:#1E2D40;--accent:#2E86AB;--green:#28A745;--red:#DC3545;--yellow:#FFC107;
+    --bg:#F0F4F8;--white:#ffffff;--card:#ffffff;--border:#DEE2E6;
+    --text:#1a1a1a;--muted:#6c757d;--input-bg:#EBF4FF;
+  }
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px}
+  
+  /* Header */
+  .header{background:var(--dark);color:white;padding:16px 20px 12px;position:sticky;top:0;z-index:100}
+  .header-top{display:flex;justify-content:space-between;align-items:center}
+  .header h1{font-size:20px;font-weight:600}
+  .header-month{font-size:13px;opacity:0.7;margin-top:2px}
+  .menu-btn{background:none;border:none;color:white;font-size:22px;cursor:pointer;padding:4px 8px}
+
+  /* Daily hero card */
+  .hero{background:var(--accent);color:white;padding:24px 20px 28px;text-align:center}
+  .hero-label{font-size:13px;opacity:0.85;letter-spacing:.3px}
+  .hero-amount{font-size:48px;font-weight:700;line-height:1.1;margin:6px 0 4px}
+  .hero-sub{font-size:13px;opacity:0.8}
+  .hero.positive{background:var(--green)}
+  .hero.negative{background:var(--red)}
+
+  /* Nav tabs */
+  .tabs{display:flex;background:var(--dark);border-bottom:1px solid rgba(255,255,255,0.1)}
+  .tab{flex:1;padding:12px 4px;text-align:center;font-size:12px;color:rgba(255,255,255,0.55);cursor:pointer;border:none;background:none;transition:.2s}
+  .tab.active{color:white;border-bottom:2px solid var(--yellow)}
+
+  /* Views */
+  .view{display:none;padding:16px}
+  .view.active{display:block}
+
+  /* Cards */
+  .card{background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border)}
+  .card-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:12px}
+
+  /* Summary row */
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .stat-box{background:var(--bg);border-radius:8px;padding:12px;text-align:center}
+  .stat-box .val{font-size:20px;font-weight:700}
+  .stat-box .lbl{font-size:11px;color:var(--muted);margin-top:2px}
+  .stat-box.green .val{color:var(--green)}
+  .stat-box.red .val{color:var(--red)}
+  .stat-box.yellow .val{color:#b8860b}
+
+  /* Progress bar */
+  .progress-wrap{margin:8px 0 4px}
+  .progress-bar{height:8px;background:#e9ecef;border-radius:99px;overflow:hidden}
+  .progress-fill{height:100%;border-radius:99px;transition:width .4s}
+  .progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px}
+
+  /* Expense list */
+  .expense-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .expense-item:last-child{border-bottom:none}
+  .expense-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .expense-info{flex:1;min-width:0}
+  .expense-info .name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .expense-info .time{font-size:12px;color:var(--muted)}
+  .expense-amount{font-size:15px;font-weight:600;color:var(--red);white-space:nowrap}
+
+  /* Input total */
+  .quick-add{display:flex;gap:10px;margin-bottom:12px}
+  .quick-add input{flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:18px;background:var(--input-bg);color:var(--text);outline:none}
+  .quick-add input:focus{border-color:var(--accent)}
+  .quick-add button{background:var(--accent);color:white;border:none;border-radius:10px;padding:0 18px;font-size:14px;font-weight:600;cursor:pointer}
+
+  /* Add expense form */
+  .form-group{margin-bottom:12px}
+  .form-group label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+  .form-group input,.form-group select{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:var(--input-bg);color:var(--text);outline:none}
+  .form-group input:focus,.form-group select:focus{border-color:var(--accent)}
+  .btn-primary{width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px}
+  .btn-primary:active{opacity:.85}
+  .btn-danger{background:var(--red)}
+
+  /* Fixed expenses */
+  .fixed-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .fixed-item:last-child{border-bottom:none}
+  .fixed-item input[type=text]{flex:1;border:none;background:transparent;font-size:14px;color:var(--text);outline:none;min-width:0}
+  .fixed-item input[type=number]{width:120px;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);text-align:right;outline:none}
+  .fixed-item input:focus{border-color:var(--accent)}
+  .del-btn{background:none;border:none;color:#ccc;font-size:18px;cursor:pointer;padding:0 4px;flex-shrink:0}
+  .del-btn:hover{color:var(--red)}
+  .add-row-btn{width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:10px;background:transparent;color:var(--muted);font-size:13px;cursor:pointer;margin-top:8px}
+  .add-row-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .income-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:20px;font-weight:600;background:var(--input-bg);color:var(--green);text-align:right;outline:none}
+  .income-input:focus{border-color:var(--green)}
+  .save-btn{width:100%;padding:13px;background:var(--green);color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px}
+
+  /* History calendar */
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px}
+  .cal-day-head{text-align:center;font-size:11px;color:var(--muted);padding:4px 0}
+  .cal-day{aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;cursor:pointer;border:1px solid transparent;position:relative}
+  .cal-day .num{font-weight:600}
+  .cal-day .dot{width:5px;height:5px;border-radius:50%;margin-top:2px}
+  .cal-day.today{border-color:var(--accent)}
+  .cal-day.has-data.ok{background:#d4edda}
+  .cal-day.has-data.over{background:#f8d7da}
+  .cal-day.empty{opacity:.3}
+  .cal-day.future{opacity:.4}
+
+  /* Notification toast */
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--dark);color:white;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:999;white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* Bottom nav */
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);display:flex;z-index:100}
+  .nav-item{flex:1;padding:10px 0 8px;text-align:center;cursor:pointer;border:none;background:none;color:var(--muted);font-size:10px;font-weight:500;transition:.2s}
+  .nav-item svg{display:block;margin:0 auto 3px}
+  .nav-item.active{color:var(--accent)}
+
+  /* Section separator */
+  .section-sep{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:16px 0 8px}
+  
+  /* Tag chips */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .chip{padding:5px 12px;border-radius:99px;border:1px solid var(--border);font-size:13px;cursor:pointer;background:white;transition:.15s}
+  .chip.active{background:var(--accent);color:white;border-color:var(--accent)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>Mi Presupuesto</h1>
+      <div class="header-month" id="headerMonth"></div>
+    </div>
+    <button class="menu-btn" onclick="showView('config')">⚙</button>
+  </div>
+</div>
+
+<div class="hero" id="heroCard">
+  <div class="hero-label">Disponible hoy</div>
+  <div class="hero-amount" id="heroAmount">$0</div>
+  <div class="hero-sub" id="heroSub">Cargá tus datos en Configuración</div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showView('hoy')" id="tab-hoy">Hoy</button>
+  <button class="tab" onclick="showView('mes')" id="tab-mes">El Mes</button>
+  <button class="tab" onclick="showView('historial')" id="tab-historial">Historial</button>
+  <button class="tab" onclick="showView('config')" id="tab-config">Config</button>
+</div>
+
+<!-- ═══ HOY ═══ -->
+<div class="view active" id="view-hoy">
+  <div class="section-sep">Registrar gasto</div>
+
+  <!-- Quick: total del día -->
+  <div class="card" id="quickCard">
+    <div class="card-title">Gasto rápido (total del día)</div>
+    <div class="quick-add">
+      <input type="number" id="quickAmount" placeholder="$ 0" inputmode="decimal">
+      <button onclick="saveQuick()">Listo</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted)">Reemplaza el total de hoy con este valor.</div>
+  </div>
+
+  <!-- Detailed: per-expense -->
+  <div class="card">
+    <div class="card-title">Agregar gasto con detalle</div>
+    <div class="form-group">
+      <label>Descripción</label>
+      <input type="text" id="expDesc" placeholder="ej: almuerzo, taxi...">
+    </div>
+    <div class="form-group">
+      <label>Monto ($)</label>
+      <input type="number" id="expAmount" placeholder="0" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label>Categoría</label>
+      <div class="chips" id="catChips"></div>
+    </div>
+    <button class="btn-primary" onclick="addExpense()">+ Agregar</button>
+  </div>
+
+  <!-- Today's expenses list -->
+  <div class="card" id="todayListCard">
+    <div class="card-title" id="todayListTitle">Gastos de hoy</div>
+    <div id="todayList"></div>
+  </div>
+</div>
+
+<!-- ═══ MES ═══ -->
+<div class="view" id="view-mes">
+  <div class="summary-grid">
+    <div class="stat-box yellow">
+      <div class="val" id="sumPresupuesto">$0</div>
+      <div class="lbl">Presupuesto mensual</div>
+    </div>
+    <div class="stat-box red">
+      <div class="val" id="sumGastado">$0</div>
+      <div class="lbl">Gastado</div>
+    </div>
+    <div class="stat-box green">
+      <div class="val" id="sumSaldo">$0</div>
+      <div class="lbl">Saldo restante</div>
+    </div>
+    <div class="stat-box">
+      <div class="val" id="sumDias">0</div>
+      <div class="lbl">Días restantes</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Uso del presupuesto mensual</div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progBar" style="width:0%;background:var(--green)"></div></div>
+      <div class="progress-label"><span id="progPct">0%</span><span id="progTotal"></span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Gastos fijos del mes</div>
+    <div id="fixedSummaryList"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Gastos variables acumulados</div>
+    <div id="catSummaryList"></div>
+  </div>
+</div>
+
+<!-- ═══ HISTORIAL ═══ -->
+<div class="view" id="view-historial">
+  <div class="card">
+    <div class="card-title" id="calTitle"></div>
+    <div class="cal-grid" id="calDayHeads"></div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+  <div class="card" id="histDetailCard" style="display:none">
+    <div class="card-title" id="histDetailTitle"></div>
+    <div id="histDetailList"></div>
+  </div>
+</div>
+
+<!-- ═══ CONFIG ═══ -->
+<div class="view" id="view-config">
+  <div class="card">
+    <div class="card-title">Ingresos mensuales</div>
+    <div class="form-group">
+      <label>Total ingresos ($)</label>
+      <input type="number" class="income-input" id="cfgIncome" placeholder="0" inputmode="decimal">
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Gastos fijos del mes</div>
+    <div id="fixedList"></div>
+    <button class="add-row-btn" onclick="addFixed()">+ Agregar gasto fijo</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Categorías de gastos</div>
+    <div id="catList"></div>
+    <button class="add-row-btn" onclick="addCat()">+ Agregar categoría</button>
+  </div>
+  <button class="save-btn" onclick="saveConfig()">Guardar configuración</button>
+  <br><br>
+  <div class="card" style="border-color:#f8d7da">
+    <div class="card-title" style="color:var(--red)">Zona de peligro</div>
+    <button class="btn-primary btn-danger" onclick="resetAll()">Borrar todos los datos</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ICONS = {'Comida':'🍽','Transporte':'🚌','Mercado':'🛒','Salud':'💊','Entretenimiento':'🎬','Ropa':'👕','Servicios':'🔧','Otro':'📦'};
+const DAYS_ES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function load(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}}
+function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
+
+function defaultConfig(){
+  return {
+    income: 0,
+    fixed: [
+      {id:1,name:'Alquiler / Expensas',amount:0},
+      {id:2,name:'Tarjeta de crédito',amount:0},
+      {id:3,name:'Internet / Telefonía',amount:0},
+      {id:4,name:'Seguros',amount:0}
+    ],
+    cats: ['Comida','Transporte','Mercado','Salud','Entretenimiento','Otro']
+  };
+}
+
+function getConfig(){return load('cfg') || defaultConfig()}
+function getDayKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function today(){return new Date()}
+
+function getDayData(key){return load('day_'+key) || {total:null,expenses:[]}}
+function saveDayData(key,data){save('day_'+key,data)}
+
+function fmt(n){
+  if(n===null||n===undefined) return '$0';
+  const abs = Math.abs(n);
+  const s = abs >= 1000 ? abs.toLocaleString('es-AR',{maximumFractionDigits:0}) : abs.toFixed(0);
+  return (n < 0 ? '-$' : '$') + s;
+}
+
+function calcBudget(){
+  const cfg = getConfig();
+  const now = today();
+  const year = now.getFullYear(), month = now.getMonth();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const dayOfMonth = now.getDate();
+  const daysLeft = daysInMonth - dayOfMonth + 1;
+  const totalFixed = cfg.fixed.reduce((a,x)=>a+(+x.amount||0),0);
+  const available = cfg.income - totalFixed;
+  const basePerDay = daysLeft > 0 ? available / daysLeft : 0;
+
+  // Calculate accrued balance from previous days this month
+  let accrued = 0;
+  for(let d = 1; d < dayOfMonth; d++){
+    const k = getDayKey(new Date(year, month, d));
+    const dd = getDayData(k);
+    const spent = dd.total !== null ? dd.total : dayExpenseSum(dd);
+    accrued += (basePerDay + accrued) - spent;
+  }
+  const todayBudget = basePerDay + accrued;
+  return {basePerDay, todayBudget, available, daysLeft, daysInMonth, totalFixed};
+}
+
+function dayExpenseSum(dd){
+  return dd.expenses.reduce((a,x)=>a+(+x.amount||0),0);
+}
+
+function getTodaySpent(){
+  const k = getDayKey(today());
+  const dd = getDayData(k);
+  if(dd.total !== null) return dd.total;
+  return dayExpenseSum(dd);
+}
+
+// ─── Hero card ────────────────────────────────────────────────────
+function updateHero(){
+  const {todayBudget, daysLeft} = calcBudget();
+  const spent = getTodaySpent();
+  const remaining = todayBudget - spent;
+  const hero = document.getElementById('heroCard');
+  document.getElementById('heroAmount').textContent = fmt(remaining);
+  const pct = todayBudget > 0 ? Math.round((spent/todayBudget)*100) : 0;
+  document.getElementById('heroSub').textContent = `Gastaste ${fmt(spent)} de ${fmt(todayBudget)} — ${daysLeft} días restantes`;
+  hero.className = 'hero' + (remaining >= 0 ? ' positive' : ' negative');
+}
+
+// ─── HOY view ────────────────────────────────────────────────────
+function renderHoy(){
+  updateHero();
+  const cfg = getConfig();
+  const chips = document.getElementById('catChips');
+  chips.innerHTML = '';
+  (cfg.cats||[]).forEach(c=>{
+    const el = document.createElement('div');
+    el.className='chip'+(window._selCat===c?' active':'');
+    el.textContent=(ICONS[c]||'📌')+' '+c;
+    el.onclick=()=>{window._selCat=(window._selCat===c?null:c);renderHoy()};
+    chips.appendChild(el);
+  });
+  renderTodayList();
+}
+
+function renderTodayList(){
+  const k = getDayKey(today());
+  const dd = getDayData(k);
+  const list = document.getElementById('todayList');
+  const title = document.getElementById('todayListTitle');
+  const total = getTodaySpent();
+  title.textContent = `Gastos de hoy — ${fmt(total)}`;
+  list.innerHTML = '';
+  if(!dd.expenses.length && dd.total === null){
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:12px 0">Sin gastos registrados</p>';
+    return;
+  }
+  if(dd.total !== null && !dd.expenses.length){
+    const row = document.createElement('div');
+    row.className='expense-item';
+    row.innerHTML=`<div class="expense-icon" style="background:#f0f4f8">📊</div><div class="expense-info"><div class="name">Total del día</div></div><div class="expense-amount">${fmt(dd.total)}</div>`;
+    list.appendChild(row);
+    return;
+  }
+  [...dd.expenses].reverse().forEach((e,ri)=>{
+    const i = dd.expenses.length-1-ri;
+    const row = document.createElement('div');
+    row.className='expense-item';
+    const icon = ICONS[e.cat]||'📌';
+    row.innerHTML=`<div class="expense-icon" style="background:#f0f4f8">${icon}</div><div class="expense-info"><div class="name">${e.desc||e.cat||'Gasto'}</div><div class="time">${e.cat||''} · ${e.time}</div></div><div class="expense-amount">${fmt(e.amount)}</div><button class="del-btn" onclick="delExpense(${i})">×</button>`;
+    list.appendChild(row);
+  });
+}
+
+function saveQuick(){
+  const val = parseFloat(document.getElementById('quickAmount').value);
+  if(isNaN(val)||val<0){showToast('Ingresá un monto válido');return}
+  const k = getDayKey(today());
+  const dd = getDayData(k);
+  dd.total = val;
+  saveDayData(k, dd);
+  document.getElementById('quickAmount').value='';
+  showToast('Gasto del día guardado');
+  renderHoy();
+}
+
+function addExpense(){
+  const desc = document.getElementById('expDesc').value.trim();
+  const amount = parseFloat(document.getElementById('expAmount').value);
+  if(isNaN(amount)||amount<=0){showToast('Ingresá un monto válido');return}
+  const cat = window._selCat||'Otro';
+  const k = getDayKey(today());
+  const dd = getDayData(k);
+  dd.total = null;
+  dd.expenses.push({desc,amount,cat,time:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})});
+  saveDayData(k,dd);
+  document.getElementById('expDesc').value='';
+  document.getElementById('expAmount').value='';
+  window._selCat=null;
+  showToast('Gasto agregado');
+  renderHoy();
+}
+
+function delExpense(i){
+  const k = getDayKey(today());
+  const dd = getDayData(k);
+  dd.expenses.splice(i,1);
+  saveDayData(k,dd);
+  renderHoy();
+}
+
+// ─── MES view ────────────────────────────────────────────────────
+function renderMes(){
+  const cfg = getConfig();
+  const {available, daysLeft, daysInMonth, totalFixed, basePerDay} = calcBudget();
+  const now = today();
+  const year = now.getFullYear(), month = now.getMonth();
+
+  // Compute total spent this month
+  let totalSpent = 0;
+  const catTotals = {};
+  for(let d=1;d<=now.getDate();d++){
+    const k = getDayKey(new Date(year,month,d));
+    const dd = getDayData(k);
+    const s = dd.total !== null ? dd.total : dayExpenseSum(dd);
+    totalSpent += s;
+    dd.expenses.forEach(e=>{
+      catTotals[e.cat]=(catTotals[e.cat]||0)+(+e.amount||0);
+    });
+  }
+
+  const budget = cfg.income - totalFixed;
+  document.getElementById('sumPresupuesto').textContent=fmt(budget);
+  document.getElementById('sumGastado').textContent=fmt(totalSpent);
+  document.getElementById('sumSaldo').textContent=fmt(budget-totalSpent);
+  document.getElementById('sumDias').textContent=daysLeft;
+  const pct = budget>0?Math.min(Math.round((totalSpent/budget)*100),100):0;
+  document.getElementById('progBar').style.width=pct+'%';
+  document.getElementById('progBar').style.background=pct>85?'var(--red)':pct>60?'var(--yellow)':'var(--green)';
+  document.getElementById('progPct').textContent=pct+'%';
+  document.getElementById('progTotal').textContent=`${fmt(totalSpent)} / ${fmt(budget)}`;
+
+  // Fixed list
+  const fl = document.getElementById('fixedSummaryList');
+  fl.innerHTML='';
+  cfg.fixed.forEach(f=>{
+    if(!f.amount) return;
+    const row=document.createElement('div');
+    row.className='expense-item';
+    row.innerHTML=`<div class="expense-info"><div class="name">${f.name}</div></div><div class="expense-amount" style="color:var(--red)">${fmt(f.amount)}</div>`;
+    fl.appendChild(row);
+  });
+  if(!cfg.fixed.some(f=>f.amount)) fl.innerHTML='<p style="color:var(--muted);font-size:13px">Sin gastos fijos configurados</p>';
+
+  // Cat summary
+  const cl = document.getElementById('catSummaryList');
+  cl.innerHTML='';
+  const sorted = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
+  if(!sorted.length){cl.innerHTML='<p style="color:var(--muted);font-size:13px">Sin gastos variables aún</p>';return}
+  sorted.forEach(([cat,amt])=>{
+    const row=document.createElement('div');
+    row.className='expense-item';
+    row.innerHTML=`<div class="expense-icon" style="background:#f0f4f8">${ICONS[cat]||'📌'}</div><div class="expense-info"><div class="name">${cat}</div></div><div class="expense-amount" style="color:var(--text)">${fmt(amt)}</div>`;
+    cl.appendChild(row);
+  });
+}
+
+// ─── HISTORIAL view ───────────────────────────────────────────────
+function renderHistorial(){
+  const now = today();
+  const year = now.getFullYear(), month = now.getMonth();
+  const daysInMonth = new Date(year,month+1,0).getDate();
+  const firstDow = new Date(year,month,1).getDay();
+  const {basePerDay} = calcBudget();
+
+  document.getElementById('calTitle').textContent = MONTHS_ES[month]+' '+year;
+  const heads = document.getElementById('calDayHeads');
+  heads.innerHTML='';
+  DAYS_ES.forEach(d=>{const el=document.createElement('div');el.className='cal-day-head';el.textContent=d;heads.appendChild(el)});
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML='';
+  for(let i=0;i<firstDow;i++){const el=document.createElement('div');el.className='cal-day empty';grid.appendChild(el)}
+  for(let d=1;d<=daysInMonth;d++){
+    const k=getDayKey(new Date(year,month,d));
+    const dd=getDayData(k);
+    const spent=dd.total!==null?dd.total:dayExpenseSum(dd);
+    const el=document.createElement('div');
+    const isFuture=d>now.getDate();
+    const isToday=d===now.getDate();
+    let cls='cal-day';
+    if(isToday) cls+=' today';
+    if(isFuture) cls+=' future';
+    if(!isFuture && (dd.total!==null||dd.expenses.length)){
+      cls+=' has-data '+(spent<=basePerDay?'ok':'over');
+    }
+    el.className=cls;
+    el.innerHTML=`<span class="num">${d}</span><span class="dot" style="background:${!isFuture&&(dd.total!==null||dd.expenses.length)?(spent<=basePerDay?'var(--green)':'var(--red)'):'transparent'}"></span>`;
+    el.onclick=()=>showHistDetail(d,year,month);
+    grid.appendChild(el);
+  }
+}
+
+function showHistDetail(d,year,month){
+  const k=getDayKey(new Date(year,month,d));
+  const dd=getDayData(k);
+  const card=document.getElementById('histDetailCard');
+  const title=document.getElementById('histDetailTitle');
+  const list=document.getElementById('histDetailList');
+  title.textContent=`${d} de ${MONTHS_ES[month]}`;
+  list.innerHTML='';
+  const spent=dd.total!==null?dd.total:dayExpenseSum(dd);
+  if(dd.total!==null&&!dd.expenses.length){
+    list.innerHTML=`<div class="expense-item"><div class="expense-info"><div class="name">Total del día</div></div><div class="expense-amount">${fmt(dd.total)}</div></div>`;
+  } else if(dd.expenses.length){
+    dd.expenses.forEach(e=>{
+      const row=document.createElement('div');
+      row.className='expense-item';
+      row.innerHTML=`<div class="expense-icon" style="background:#f0f4f8">${ICONS[e.cat]||'📌'}</div><div class="expense-info"><div class="name">${e.desc||e.cat}</div><div class="time">${e.cat} · ${e.time}</div></div><div class="expense-amount">${fmt(e.amount)}</div>`;
+      list.appendChild(row);
+    });
+  } else {
+    list.innerHTML='<p style="color:var(--muted);font-size:13px">Sin datos para este día</p>';
+  }
+  if(spent>0){
+    const total=document.createElement('div');
+    total.style.cssText='padding:10px 0;font-weight:600;display:flex;justify-content:space-between;border-top:1px solid var(--border);margin-top:4px';
+    total.innerHTML=`<span>Total</span><span>${fmt(spent)}</span>`;
+    list.appendChild(total);
+  }
+  card.style.display='block';
+}
+
+// ─── CONFIG view ──────────────────────────────────────────────────
+function renderConfig(){
+  const cfg=getConfig();
+  document.getElementById('cfgIncome').value=cfg.income||'';
+  renderFixedList(cfg);
+  renderCatList(cfg);
+}
+
+function renderFixedList(cfg){
+  const fl=document.getElementById('fixedList');
+  fl.innerHTML='';
+  cfg.fixed.forEach((f,i)=>{
+    const row=document.createElement('div');
+    row.className='fixed-item';
+    row.innerHTML=`<input type="text" value="${f.name}" placeholder="Concepto" onchange="updateFixed(${i},'name',this.value)"><input type="number" value="${f.amount||''}" placeholder="0" inputmode="decimal" onchange="updateFixed(${i},'amount',this.value)"><button class="del-btn" onclick="removeFixed(${i})">×</button>`;
+    fl.appendChild(row);
+  });
+}
+
+function renderCatList(cfg){
+  const cl=document.getElementById('catList');
+  cl.innerHTML='';
+  (cfg.cats||[]).forEach((c,i)=>{
+    const row=document.createElement('div');
+    row.className='fixed-item';
+    row.innerHTML=`<span style="font-size:18px;flex-shrink:0">${ICONS[c]||'📌'}</span><input type="text" value="${c}" placeholder="Categoría" onchange="updateCat(${i},this.value)"><button class="del-btn" onclick="removeCat(${i})">×</button>`;
+    cl.appendChild(row);
+  });
+}
+
+window._draftCfg=null;
+function getDraft(){if(!window._draftCfg)window._draftCfg=JSON.parse(JSON.stringify(getConfig()));return window._draftCfg}
+
+function updateFixed(i,field,val){const c=getDraft();c.fixed[i][field]=field==='amount'?parseFloat(val)||0:val;window._draftCfg=c}
+function addFixed(){const c=getDraft();c.fixed.push({id:Date.now(),name:'',amount:0});window._draftCfg=c;renderFixedList(c)}
+function removeFixed(i){const c=getDraft();c.fixed.splice(i,1);window._draftCfg=c;renderFixedList(c)}
+function updateCat(i,val){const c=getDraft();c.cats[i]=val;window._draftCfg=c}
+function addCat(){const c=getDraft();c.cats.push('Nueva');window._draftCfg=c;renderCatList(c)}
+function removeCat(i){const c=getDraft();c.cats.splice(i,1);window._draftCfg=c;renderCatList(c)}
+
+function saveConfig(){
+  const c=getDraft()||getConfig();
+  c.income=parseFloat(document.getElementById('cfgIncome').value)||0;
+  save('cfg',c);
+  window._draftCfg=null;
+  showToast('Configuración guardada');
+  updateHero();
+}
+
+function resetAll(){
+  if(!confirm('¿Borrar todos los datos? Esta acción no se puede deshacer.')) return;
+  localStorage.clear();
+  window._draftCfg=null;
+  showToast('Datos borrados');
+  showView('config');
+}
+
+// ─── Navigation ───────────────────────────────────────────────────
+function showView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  const tab=document.getElementById('tab-'+v);
+  if(tab) tab.classList.add('active');
+  if(v==='hoy') renderHoy();
+  else if(v==='mes') renderMes();
+  else if(v==='historial') renderHistorial();
+  else if(v==='config'){window._draftCfg=null;renderConfig()}
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────
+const now=today();
+document.getElementById('headerMonth').textContent=MONTHS_ES[now.getMonth()]+' '+now.getFullYear();
+showView('hoy');
+</script>
+</body>
+</html>
