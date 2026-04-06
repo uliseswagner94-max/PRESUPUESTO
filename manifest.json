@@ -1,0 +1,21 @@
+{
+  "name": "Mi Presupuesto",
+  "short_name": "Presupuesto",
+  "start_url": "/presupuesto/",
+  "display": "standalone",
+  "background_color": "#1E2D40",
+  "theme_color": "#1E2D40",
+  "description": "Control de gastos diarios",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x192/1E2D40/ffffff?text=P",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512x512/1E2D40/ffffff?text=P",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
