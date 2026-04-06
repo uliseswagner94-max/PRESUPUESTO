@@ -1,7 +1,7 @@
 {
   "name": "Mi Presupuesto",
   "short_name": "Presupuesto",
-  "start_url": "/PRESUPUESTO/presupuesto_app.html",
+  "start_url": "/PRESUPUESTO/",
   "display": "standalone",
   "background_color": "#1E2D40",
   "theme_color": "#1E2D40",
